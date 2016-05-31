@@ -152,13 +152,13 @@ abstract class ReflectionElement extends ReflectionBase
 		static $packages = [];
 
 		if ($package = $this->getAnnotation('package')) {
-			$packageName = preg_replace('~\s+.*~s', '', $package[0]);
-			if (empty($packageName)) {
+			$packageName = trim($package[0]);
+			if ( empty($packageName) ) {
 				return '';
 			}
 
-			if ($subpackage = $this->getAnnotation('subpackage')) {
-				$subpackageName = preg_replace('~\s+.*~s', '', $subpackage[0]);
+			if ( $subpackage = $this->getAnnotation('subpackage') ) {
+				$subpackageName = $this->preserveWhiteSpaces($subpackage[0]);
 				if ( ! empty($subpackageName) && strpos($subpackageName, $packageName) === 0) {
 					$packageName = $subpackageName;
 
@@ -166,19 +166,38 @@ abstract class ReflectionElement extends ReflectionBase
 					$packageName .= '\\' . $subpackageName;
 				}
 			}
-			$packageName = strtr($packageName, '._/', '\\\\\\');
+			$packageName = strtr( $packageName, '._/', '\\\\\\' );
 
 			$lowerPackageName = strtolower($packageName);
 			if ( ! isset($packages[$lowerPackageName])) {
 				$packages[$lowerPackageName] = $packageName;
 			}
-
-			return $packages[$lowerPackageName];
+        		return $this->restoreWhiteSpaces($packages[$lowerPackageName]);
 		}
 
 		return '';
 	}
 
+	/**
+	 * Replaces white spaces with |WHITESPACE| to allow package and subpackage names to have white spaces.
+	 * 
+	 * @return      string
+	 */    
+	private function preserveWhiteSpaces($sName) 
+	{
+		$sName = str_replace(' ', '|WHITESPACE|', trim($sName));
+		return preg_replace('~\s+.*~s', '', $sName);
+	}
+
+        /**
+         * Replaces |WHITESPACE| with a white space.
+         * 
+         * @return      string
+         */
+	private function restoreWhiteSpaces($sName) 
+	{
+		return str_replace('|WHITESPACE|', ' ', $sName);
+	}
 
 	/**
 	 * Returns element package name (including subpackage name).
